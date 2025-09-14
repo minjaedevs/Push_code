@@ -1,5 +1,8 @@
 import 'package:mysql1/mysql1.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 
 class DatabaseHelper {
   static DatabaseHelper? _instance;
@@ -16,8 +19,9 @@ class DatabaseHelper {
   static const String _host = '127.0.0.1'; // Hoặc IP của server MySQL
   static const int _port = 3306;
   static const String _user = 'root'; // Username MySQL của bạn
-  static const String _password = 'Meo@2004'; // Password MySQL của bạn
+  static const String _password = '310501@@Dd'; // Password MySQL của bạn
   static const String _db = 'phenikaa_university'; // Tên database
+  static const String baseUrl = "http://localhost:3000";
 
   Future<MySqlConnection> get connection async {
   _connection ??= await MySqlConnection.connect(ConnectionSettings(
@@ -43,58 +47,58 @@ class DatabaseHelper {
     try {
       final conn = await connection;
       
-      // Tạo bảng Schools
-      await conn.query('''
-        CREATE TABLE IF NOT EXISTS schools (
-          id VARCHAR(50) PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          description TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )
-      ''');
-
-      // Tạo bảng Departments
-      await conn.query('''
-        CREATE TABLE IF NOT EXISTS departments (
-          id VARCHAR(50) PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          description TEXT,
-          school_id VARCHAR(50) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
-        )
-      ''');
-
-      // Tạo bảng Employees (mở rộng cho tương lai)
-      await conn.query('''
-        CREATE TABLE IF NOT EXISTS employees (
-          id VARCHAR(50) PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(255) UNIQUE,
-          phone VARCHAR(20),
-          position VARCHAR(100),
-          department_id VARCHAR(50),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
-        )
-      ''');
-
-      // Tạo bảng Majors (mở rộng cho tương lai)
-      await conn.query('''
-        CREATE TABLE IF NOT EXISTS majors (
-          id VARCHAR(50) PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          code VARCHAR(20) UNIQUE,
-          description TEXT,
-          department_id VARCHAR(50) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
-        )
-      ''');
+      // // Tạo bảng Schools
+      // await conn.query('''
+      //   CREATE TABLE IF NOT EXISTS schools (
+      //     id VARCHAR(50) PRIMARY KEY,
+      //     name VARCHAR(255) NOT NULL,
+      //     description TEXT,
+      //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      //   )
+      // ''');
+      //
+      // // Tạo bảng Departments
+      // await conn.query('''
+      //   CREATE TABLE IF NOT EXISTS departments (
+      //     id VARCHAR(50) PRIMARY KEY,
+      //     name VARCHAR(255) NOT NULL,
+      //     description TEXT,
+      //     school_id VARCHAR(50) NOT NULL,
+      //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      //     FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+      //   )
+      // ''');
+      //
+      // // Tạo bảng Employees (mở rộng cho tương lai)
+      // await conn.query('''
+      //   CREATE TABLE IF NOT EXISTS employees (
+      //     id VARCHAR(50) PRIMARY KEY,
+      //     name VARCHAR(255) NOT NULL,
+      //     email VARCHAR(255) UNIQUE,
+      //     phone VARCHAR(20),
+      //     position VARCHAR(100),
+      //     department_id VARCHAR(50),
+      //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      //     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
+      //   )
+      // ''');
+      //
+      // // Tạo bảng Majors (mở rộng cho tương lai)
+      // await conn.query('''
+      //   CREATE TABLE IF NOT EXISTS majors (
+      //     id VARCHAR(50) PRIMARY KEY,
+      //     name VARCHAR(255) NOT NULL,
+      //     code VARCHAR(20) UNIQUE,
+      //     description TEXT,
+      //     department_id VARCHAR(50) NOT NULL,
+      //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      //     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+      //   )
+      // ''');
 
       print('Database initialized successfully');
     } catch (e) {
@@ -103,20 +107,31 @@ class DatabaseHelper {
     }
   }
 
-  // CRUD Operations cho Schools
   Future<List<Map<String, dynamic>>> getAllSchools() async {
     try {
-      final conn = await connection;
-      final results = await conn.query('SELECT * FROM schools ORDER BY name');
-      return results.map((row) => {
-        'id': row['id'],
-        'name': row['name'],
-        'description': row['description'],
-        'created_at': row['created_at'],
-        'updated_at': row['updated_at'],
-      }).toList();
+      final response = await http.get(Uri.parse("$baseUrl/schools"));
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((e) => {
+          "id": e["id"],
+          "name": e["name"],
+          "description": e["description"],
+          "short_name": e["short_name"],
+          "university_id": e["university_id"],
+          "dean_name": e["dean_name"],
+          "dean_email": e["dean_email"],
+          "office_location": e["office_location"],
+          "phone": e["phone"],
+          "email": e["email"],
+        }).toList();
+
+      } else {
+        print("Error: ${response.statusCode}");
+        return [];
+      }
     } catch (e) {
-      print('Error getting schools: $e');
+      print("Error getting schools: $e");
       return [];
     }
   }

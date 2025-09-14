@@ -7,8 +7,8 @@ void main() async {
 
   // Khởi tạo database
   try {
-    await DatabaseHelper.instance.initializeDatabase();
-    await DatabaseHelper.instance.insertSampleData();
+    // await DatabaseHelper.instance.initializeDatabase();
+    // await DatabaseHelper.instance.insertSampleData();
     logger.i('Database setup completed');
   } catch (e) {
     logger.i('Database setup error: $e');
@@ -155,6 +155,7 @@ class _UniversityManagementScreenState
 
   Future<void> _loadSchools() async {
     final schoolData = await DatabaseHelper.instance.getAllSchools();
+    print('schoolData: $schoolData');
     setState(() {
       schools = schoolData.map((data) => School.fromMap(data)).toList();
     });
